@@ -1462,7 +1462,7 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    showToast("Datenbank erfolgreich exportiert!");
+                    alert("Datenbank erfolgreich exportiert!");
                 }, 100);
             } catch (err) {
                 console.trace("Export-Fehler:", err);
