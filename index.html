@@ -1386,33 +1386,68 @@ Check your Browserslist config to be sure that your targets are set up correctly
         function downloadDocument(docId) {
             const tx = db.transaction("documents", "readonly");
             const store = tx.objectStore("documents");
-            const req = store.get(Number(docId));
+
+            // Try numeric first, then fallback to string if necessary
+            let queryId = isNaN(Number(docId)) ? docId : Number(docId);
+
+            const req = store.get(queryId);
 
             req.onsuccess = () => {
-                const doc = req.result;
+                let doc = req.result;
+
+                // If numeric failed but it could be a string key
+                if (!doc && typeof queryId === 'number') {
+                    const fallbackReq = store.get(String(docId));
+                    fallbackReq.onsuccess = () => {
+                        processDownload(fallbackReq.result);
+                    };
+                    return;
+                }
+
+                processDownload(doc);
+            };
+
+            function processDownload(doc) {
                 if (!doc || !doc.data) return;
+
+                // Utility to trigger actual download
+                const triggerDownload = (blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = doc.name || 'Dokument';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                };
 
                 // Convert Base64 Data URL to Blob for robust downloading
                 fetch(doc.data)
                     .then(res => res.blob())
-                    .then(blob => {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = doc.name;
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 100);
-                    })
+                    .then(blob => triggerDownload(blob))
                     .catch(err => {
-                        console.error("Error converting base64 to blob for download:", err);
-                        alert("Das Dokument konnte nicht geladen werden.");
+                        console.warn("Direct fetch failed, attempting to reconstruct data URI prefix...", err);
+                        // Fallback: If doc.data is missing the 'data:...' prefix, manually attach it
+                        // Assume JPEG if unknown since it's the most common photo format from cameras
+                        const mimeType = (doc.type && doc.type !== "") ? doc.type : "image/jpeg";
+
+                        // Ensure we don't double-prefix
+                        const cleanBase64 = doc.data.includes(',') ? doc.data.split(',')[1] : doc.data;
+                        const dataURI = `data:${mimeType};base64,${cleanBase64}`;
+
+                        fetch(dataURI)
+                            .then(res => res.blob())
+                            .then(blob => triggerDownload(blob))
+                            .catch(fallbackErr => {
+                                console.error("Final Image Extraction Failed:", fallbackErr);
+                                alert("Das Dokument konnte nicht geladen werden, da die Daten fehlerhaft sind.");
+                            });
                     });
-            };
+            }
         }
 
         async function exportSingleProject(projectId) {
@@ -1653,8 +1688,13 @@ Check your Browserslist config to be sure that your targets are set up correctly
             if (!confirm('Dokument wirklich löschen?')) return;
             const tx = db.transaction("documents", "readwrite");
             const store = tx.objectStore("documents");
-            const req = store.delete(Number(docId));
+            const numericId = Number(docId);
+            const req = store.delete(numericId);
             req.onsuccess = () => {
+                // Secondary fallback deletion just in case it was stored as string natively
+                if (!isNaN(numericId)) {
+                    store.delete(String(docId));
+                }
                 showSaveToast("Dokument gelöscht.");
                 loadDocumentsForProject(projectId);
             };
