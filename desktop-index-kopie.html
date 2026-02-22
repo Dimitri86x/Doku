@@ -569,7 +569,29 @@ Check your Browserslist config to be sure that your targets are set up correctly
                     </div>
                 </div>
 
-                <div class="mt-6 flex justify-end">
+                <div class="mt-6 flex justify-between items-center">
+                    <div class="flex gap-2">
+                        <button onclick="exportDatabase()"
+                            class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-xl text-[10px] font-black uppercase shadow-sm transition-all flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            DB Export
+                        </button>
+                        <button onclick="document.getElementById('importFile').click()"
+                            class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-3 rounded-xl text-[10px] font-black uppercase shadow-sm transition-all flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            DB Import
+                        </button>
+                        <input type="file" id="importFile" accept=".json" class="hidden"
+                            onchange="importDatabase(event)">
+                    </div>
                     <button id="btn-projekt-anlegen" disabled onclick="createEmptyProject()"
                         class="bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase shadow-md transition-all flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
@@ -1396,6 +1418,105 @@ Check your Browserslist config to be sure that your targets are set up correctly
 
         function generateId() {
             return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast-success");
+            toast.textContent = msg;
+            toast.classList.remove("hidden");
+            setTimeout(() => toast.classList.add("hidden"), 3000);
+        }
+
+        async function exportDatabase() {
+            if (!db) {
+                alert("Datenbank nicht verbunden.");
+                return;
+            }
+            try {
+                const tx = db.transaction(db.objectStoreNames, "readonly");
+                const exportData = {};
+                for (const storeName of db.objectStoreNames) {
+                    const store = tx.objectStore(storeName);
+                    exportData[storeName] = await new Promise((resolve, reject) => {
+                        const request = store.getAll();
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject(request.error);
+                    });
+                }
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                const d = new Date();
+                const ts = d.toISOString().split("T")[0] + "_" + d.getHours() + "-" + d.getMinutes();
+                a.download = `Flexfundament_Backup_${ts}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast("Datenbank erfolgreich exportiert!");
+            } catch (err) {
+                console.error("Export-Fehler:", err);
+                alert("Fehler beim Exportieren der Datenbank: " + err.message);
+            }
+        }
+
+        function importDatabase(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const importData = JSON.parse(e.target.result);
+                    if (!db) {
+                        alert("Datenbank nicht verbunden.");
+                        return;
+                    }
+                    if (!confirm("WARNUNG: Dadurch werden alle aktuellen Daten gelöscht und durch das Backup ersetzt. Fortfahren?")) {
+                        event.target.value = "";
+                        return;
+                    }
+
+                    const tx = db.transaction(db.objectStoreNames, "readwrite");
+                    tx.oncomplete = () => {
+                        showToast("Datenbank erfolgreich wiederhergestellt!");
+                        event.target.value = "";
+                        getProjects(); // Refresh dashboard
+                    };
+                    tx.onerror = (err) => {
+                        console.error("Import-Fehler in Transaktion:", err);
+                        alert("Fehler beim Importieren: " + tx.error);
+                        event.target.value = "";
+                    };
+
+                    // Clear and add data to all stores
+                    for (const storeName of db.objectStoreNames) {
+                        if (importData[storeName]) {
+                            const store = tx.objectStore(storeName);
+                            // Clear existing
+                            await new Promise((resolve, reject) => {
+                                const req = store.clear();
+                                req.onsuccess = resolve;
+                                req.onerror = reject;
+                            });
+                            // Add new
+                            for (const item of importData[storeName]) {
+                                await new Promise((resolve, reject) => {
+                                    const req = store.add(item);
+                                    req.onsuccess = resolve;
+                                    req.onerror = reject;
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Parse-Fehler beim Import:", err);
+                    alert("Ungültige Backup-Datei: " + err.message);
+                    event.target.value = "";
+                }
+            };
+            reader.readAsText(file);
         }
 
         function showSaveToast(message, isError = false) {
