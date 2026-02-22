@@ -1460,8 +1460,8 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 const content = await zip.generateAsync({ type: "blob" });
 
                 // Trigger Download
-                const safeCustomer = (project.daten.kunde || 'Kunde').replace(/[^a-z0-9]/gi, '_');
-                const safeProject = (project.daten.projekt || 'Projekt').replace(/[^a-z0-9]/gi, '_');
+                const safeCustomer = (project.kunde || project.data?.projekt?.kunde || 'Kunde').replace(/[^a-z0-9_ -]/gi, '_');
+                const safeProject = (project.projekt || project.data?.projekt?.projekt || 'Projekt').replace(/[^a-z0-9_ -]/gi, '_');
                 const zipFilename = `${safeCustomer}_${safeProject}_Export.zip`;
 
                 const url = URL.createObjectURL(content);
