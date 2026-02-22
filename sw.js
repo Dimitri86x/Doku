@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flexfundament-v1';
+const CACHE_NAME = 'flexfundament-v2';
 const ASSETS = [
     './index.html',
     './manifest.json',
@@ -9,10 +9,10 @@ const ASSETS = [
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-        .then(cache => {
-            console.log('Opened cache');
-            return cache.addAll(ASSETS);
-        })
+            .then(cache => {
+                console.log('Opened cache');
+                return cache.addAll(ASSETS);
+            })
     );
     // Sofort aktivieren, ohne auf Restart zu warten
     self.skipWaiting();
@@ -51,7 +51,7 @@ self.addEventListener('fetch', event => {
                         if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
                             return networkResponse;
                         }
-                        
+
                         const responseToCache = networkResponse.clone();
                         caches.open(CACHE_NAME)
                             .then(cache => {
