@@ -1451,14 +1451,22 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 if (documents && documents.length > 0) {
                     const photoFolder = zip.folder("Fotos");
                     documents.forEach((doc, idx) => {
-                        // Extract base64 part
-                        const base64Data = doc.datenBase64.split(',')[1];
-                        let extension = "jpg";
-                        if (doc.datenBase64.includes("image/png")) extension = "png";
+                        // Skip if doc somehow lacks base64 data to prevent crash
+                        if (!doc || typeof doc.datenBase64 !== 'string') return;
 
-                        // Use document name if available, else generic name
-                        const fileName = doc.dateiname || `Foto_${idx + 1}.${extension}`;
-                        photoFolder.file(fileName, base64Data, { base64: true });
+                        try {
+                            const base64Data = doc.datenBase64.split(',')[1];
+                            if (!base64Data) return;
+
+                            let extension = "jpg";
+                            if (doc.datenBase64.includes("image/png")) extension = "png";
+
+                            // Use document name if available, else generic name
+                            const fileName = doc.dateiname || `Foto_${idx + 1}.${extension}`;
+                            photoFolder.file(fileName, base64Data, { base64: true });
+                        } catch (e) {
+                            console.warn("Konnte Dokument beim ZIP-Export nicht verarbeiten:", doc);
+                        }
                     });
                 }
 
