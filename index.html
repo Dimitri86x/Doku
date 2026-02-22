@@ -1434,10 +1434,10 @@ Check your Browserslist config to be sure that your targets are set up correctly
                     return;
                 }
 
-                // Get photos/documents - ensure ID is a Number since generateId() creates integers
-                const numericProjectId = Number(projectId);
+                // Get photos/documents - use exactly the ID type stored on the project
+                const queryId = project.id || projectId;
                 const documents = await new Promise((resolve, reject) => {
-                    const req = db.transaction("documents", "readonly").objectStore("documents").index("projectId").getAll(numericProjectId);
+                    const req = db.transaction("documents", "readonly").objectStore("documents").index("projectId").getAll(queryId);
                     req.onsuccess = () => resolve(req.result);
                     req.onerror = () => reject(req.error);
                 });
