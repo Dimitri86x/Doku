@@ -18,6 +18,7 @@
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231e3a8a' rx='20'/%3E%3Cpath d='M30 70 V30 H70 V40 H40 V45 H60 V55 H40 V70 Z' fill='%2322c55e'/%3E%3C/svg%3E">
 
     <title>Projekt-Zentrale - Digitale Baustelle</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @page {
             margin: 15mm;
@@ -1054,10 +1055,19 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 </div>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-100 flex gap-3 justify-end">
+            <div class="mt-6 pt-4 border-t border-slate-100 flex gap-3 justify-end items-center">
                 <button onclick="deleteProject(window.currentOpenProjectId)"
                     class="px-6 py-3 bg-red-50 hover:bg-red-100 rounded-xl font-bold uppercase text-[10px] text-red-600 transition-colors mr-auto">Projekt
                     löschen</button>
+                <button onclick="exportSingleProject(window.currentOpenProjectId)"
+                    class="px-6 py-3 bg-blue-50 flex items-center gap-2 hover:bg-blue-100 rounded-xl font-bold uppercase text-[10px] text-blue-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Exportieren
+                </button>
                 <button onclick="toggleModal('modal-project-details', false)"
                     class="px-6 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold uppercase text-[10px] text-slate-600 transition-colors">Schließen</button>
             </div>
@@ -1397,6 +1407,80 @@ Check your Browserslist config to be sure that your targets are set up correctly
                         alert("Das Dokument konnte nicht geladen werden.");
                     });
             };
+        }
+
+        async function exportSingleProject(projectId) {
+            if (!db || typeof JSZip === 'undefined') {
+                alert("Datenbankfehler oder JSZip nicht geladen.");
+                return;
+            }
+
+            try {
+                // Get project data
+                const project = await new Promise((resolve, reject) => {
+                    const req = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+
+                if (!project) {
+                    alert("Projekt nicht gefunden.");
+                    return;
+                }
+
+                // Get photos/documents
+                const documents = await new Promise((resolve, reject) => {
+                    const req = db.transaction("documents", "readonly").objectStore("documents").index("projectId").getAll(projectId);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+
+                const zip = new JSZip();
+
+                // Add project data JSON
+                const reportContent = JSON.stringify(project, null, 2);
+                zip.file("Projekt_Daten.json", reportContent);
+
+                // Add Photos
+                if (documents && documents.length > 0) {
+                    const photoFolder = zip.folder("Fotos");
+                    documents.forEach((doc, idx) => {
+                        // Extract base64 part
+                        const base64Data = doc.datenBase64.split(',')[1];
+                        let extension = "jpg";
+                        if (doc.datenBase64.includes("image/png")) extension = "png";
+
+                        // Use document name if available, else generic name
+                        const fileName = doc.dateiname || `Foto_${idx + 1}.${extension}`;
+                        photoFolder.file(fileName, base64Data, { base64: true });
+                    });
+                }
+
+                // Generate ZIP
+                const content = await zip.generateAsync({ type: "blob" });
+
+                // Trigger Download
+                const safeCustomer = (project.daten.kunde || 'Kunde').replace(/[^a-z0-9]/gi, '_');
+                const safeProject = (project.daten.projekt || 'Projekt').replace(/[^a-z0-9]/gi, '_');
+                const zipFilename = `${safeCustomer}_${safeProject}_Export.zip`;
+
+                const url = URL.createObjectURL(content);
+                const a = document.createElement("a");
+                a.style.display = 'none';
+                a.href = url;
+                a.download = zipFilename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    alert(`Projekt als ${zipFilename} exportiert!`);
+                }, 100);
+
+            } catch (err) {
+                console.error("Fehler beim Exportieren des Projekts:", err);
+                alert("Fehler beim Exportieren: " + err.message);
+            }
         }
 
         function deleteProjectDocument(docId, projectId) {
