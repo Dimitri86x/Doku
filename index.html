@@ -1425,28 +1425,33 @@ Check your Browserslist config to be sure that your targets are set up correctly
                     }, 100);
                 };
 
-                // Convert Base64 Data URL to Blob for robust downloading
-                fetch(doc.data)
-                    .then(res => res.blob())
-                    .then(blob => triggerDownload(blob))
-                    .catch(err => {
-                        console.warn("Direct fetch failed, attempting to reconstruct data URI prefix...", err);
-                        // Fallback: If doc.data is missing the 'data:...' prefix, manually attach it
-                        // Assume JPEG if unknown since it's the most common photo format from cameras
-                        const mimeType = (doc.type && doc.type !== "") ? doc.type : "image/jpeg";
+                // Helper to safely parse and reconstruct binary image blob
+                const base64ToBlob = (b64Data, contentType = '') => {
+                    const byteCharacters = atob(b64Data);
+                    const byteArrays = [];
+                    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                        const slice = byteCharacters.slice(offset, offset + 512);
+                        const byteNumbers = new Array(slice.length);
+                        for (let i = 0; i < slice.length; i++) {
+                            byteNumbers[i] = slice.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        byteArrays.push(byteArray);
+                    }
+                    return new Blob(byteArrays, { type: contentType });
+                };
 
-                        // Ensure we don't double-prefix
-                        const cleanBase64 = doc.data.includes(',') ? doc.data.split(',')[1] : doc.data;
-                        const dataURI = `data:${mimeType};base64,${cleanBase64}`;
+                try {
+                    // Extract strictly the base64 payload body
+                    const cleanBase64 = doc.data.includes(',') ? doc.data.split(',')[1] : doc.data;
+                    const mimeType = doc.type || (doc.data.includes('image/png') ? 'image/png' : 'image/jpeg');
 
-                        fetch(dataURI)
-                            .then(res => res.blob())
-                            .then(blob => triggerDownload(blob))
-                            .catch(fallbackErr => {
-                                console.error("Final Image Extraction Failed:", fallbackErr);
-                                alert("Das Dokument konnte nicht geladen werden, da die Daten fehlerhaft sind.");
-                            });
-                    });
+                    const blob = base64ToBlob(cleanBase64, mimeType);
+                    triggerDownload(blob);
+                } catch (err) {
+                    console.error("Base64 zu Blob Konvertierung fehlgeschlagen:", err);
+                    alert("Das Dokument ist beschädigt und konnte nicht geladen werden.");
+                }
             }
         }
 
