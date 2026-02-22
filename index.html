@@ -1444,6 +1444,10 @@ Check your Browserslist config to be sure that your targets are set up correctly
 
                 const zip = new JSZip();
 
+                // Compute safe filenames early
+                const safeCustomer = (project.kunde || project.data?.projekt?.kunde || 'Kunde').replace(/[^a-z0-9_ -]/gi, '_');
+                const safeProject = (project.projekt || project.data?.projekt?.projekt || 'Projekt').replace(/[^a-z0-9_ -]/gi, '_');
+
                 // Add project data JSON
                 const reportContent = JSON.stringify(project, null, 2);
                 zip.file("Projekt_Daten.json", reportContent);
@@ -1533,9 +1537,6 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 // Generate ZIP
                 const content = await zip.generateAsync({ type: "blob" });
 
-                // Trigger Download
-                const safeCustomer = (project.kunde || project.data?.projekt?.kunde || 'Kunde').replace(/[^a-z0-9_ -]/gi, '_');
-                const safeProject = (project.projekt || project.data?.projekt?.projekt || 'Projekt').replace(/[^a-z0-9_ -]/gi, '_');
                 const zipFilename = `${safeCustomer}_${safeProject}_Export.zip`;
 
                 try {
