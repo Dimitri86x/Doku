@@ -1492,125 +1492,185 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 const reportContent = JSON.stringify(project, null, 2);
                 zip.file("Projekt_Daten.json", reportContent);
 
-                // Generate HTML Report View - using the exact print layout generator
+                // Generate HTML Report View - using identical Tailwind web app classes
                 const clonedContent = document.createElement("div");
 
                 // Construct Header
                 const safeDate = new Date(project.savedAt || Date.now()).toLocaleDateString('de-DE');
                 clonedContent.innerHTML = `
-                    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                        <table style="width: 100%; border-bottom: 2px solid #1e3a8a; margin-bottom: 20px;">
-                            <tr>
-                                <td>
-                                    <h1 style="color: #1e3a8a; font-size: 24px; margin: 0;">FLEXFUNDAMENT</h1>
-                                    <h2 style="font-size: 16px; margin: 5px 0 0 0; color: #475569;">PRÜFBERICHT</h2>
-                                </td>
-                                <td style="text-align: right; font-size: 12px; color: #64748b;">
-                                    <strong>Datum:</strong> ${safeDate}<br>
-                                    <strong>Kunde:</strong> ${project.kunde}<br>
-                                    <strong>Projekt:</strong> ${project.projekt}
-                                </td>
-                            </tr>
-                        </table>
+                    <div class="max-w-5xl mx-auto p-4 md:p-8 bg-white">
+                        <div class="flex justify-between items-end border-b-4 border-blue-900 pb-4 mb-8">
+                            <div>
+                                <h1 class="text-3xl font-black uppercase text-blue-900 m-0 leading-none">FLEXFUNDAMENT</h1>
+                                <h2 class="text-lg font-bold text-slate-500 m-0 mt-2 uppercase tracking-widest">PRÜFBERICHT</h2>
+                            </div>
+                            <div class="text-right text-xs text-slate-600 space-y-1">
+                                <div><strong class="uppercase text-[9px] text-slate-400">Datum:</strong><br><span class="font-bold text-sm text-slate-800">${safeDate}</span></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                             <div><strong class="uppercase text-[9px] text-slate-400">Kunde:</strong><br><span class="font-bold text-base text-slate-800">${project.kunde}</span></div>
+                             <div><strong class="uppercase text-[9px] text-slate-400">Projekt:</strong><br><span class="font-bold text-base text-blue-900">${project.projekt}</span></div>
+                        </div>
                 `;
 
                 // Reconstruct Drehmoment if exists
                 if (project.data?.moduleData?.drehmoment) {
                     const dr = project.data.moduleData.drehmoment;
                     clonedContent.innerHTML += `
-                        <h3 style="background: #f1f5f9; padding: 10px; border-left: 4px solid #3b82f6; margin-top: 30px;">Eindrehprotokoll (Drehmoment)</h3>
-                        <p style="font-size: 12px; margin-bottom: 10px;"><strong>Prüfer:</strong> ${dr.pruefer || '-'} | <strong>GPS:</strong> ${dr.gps || '-'}</p>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; margin-bottom: 20px;">
-                            <tr style="background: #1e293b; color: white;">
-                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Stufe</th>
-                                <th style="padding: 8px; border: 1px solid #cbd5e1;">kN</th>
-                                <th style="padding: 8px; border: 1px solid #cbd5e1;">kNm</th>
-                                <th style="padding: 8px; border: 1px solid #cbd5e1;">Typ</th>
-                            </tr>
+                        <div class="mb-12">
+                            <h3 class="text-base font-black uppercase text-blue-900 border-b-2 border-blue-900 inline-block mb-4">Eindrehprotokoll (Drehmoment)</h3>
+                            
+                            <div class="flex gap-6 mb-4 text-xs">
+                                <div><span class="text-[10px] font-black uppercase text-slate-400 mr-2">Prüfer:</span><span class="font-bold text-slate-800">${dr.pruefer || '-'}</span></div>
+                                <div><span class="text-[10px] font-black uppercase text-slate-400 mr-2">GPS:</span><span class="font-bold text-blue-600">${dr.gps || '-'}</span></div>
+                            </div>
+
+                            <table class="w-full text-left border-collapse mb-4 text-xs">
+                                <thead>
+                                    <tr class="bg-gray-100 border-b border-gray-300">
+                                        <th class="p-2 font-bold text-[10px] uppercase text-slate-600">Stufe</th>
+                                        <th class="p-2 font-bold text-[10px] uppercase text-slate-600 text-center">kN</th>
+                                        <th class="p-2 font-bold text-[10px] uppercase text-blue-600 text-center">kNm</th>
+                                        <th class="p-2 font-bold text-[10px] uppercase text-slate-600">Typ / Fundament</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                     `;
                     (dr.rows || []).forEach(r => {
-                        clonedContent.innerHTML += `<tr>
-                            <td style="padding: 6px; border: 1px solid #cbd5e1;">${r.stufe}</td>
-                            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold;">${r.kn}</td>
-                            <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: bold; color: #1e3a8a;">${r.knm}</td>
-                            <td style="padding: 6px; border: 1px solid #cbd5e1;">${r.typ}</td>
+                        clonedContent.innerHTML += `<tr class="border-b border-gray-200">
+                            <td class="p-2 font-bold text-[10px] text-slate-800 border-r border-gray-100">${r.stufe}</td>
+                            <td class="p-2 text-center font-mono font-bold text-blue-900 tabular-nums border-r border-gray-100">${r.kn}</td>
+                            <td class="p-2 text-center font-mono font-bold text-blue-600 tabular-nums border-r border-gray-100">${r.knm}</td>
+                            <td class="p-2 text-[10px] text-slate-800 font-medium">${r.typ}</td>
                         </tr>`;
                     });
-                    clonedContent.innerHTML += `</table>`;
-                    if (dr.notizen) clonedContent.innerHTML += `<div style="font-size: 11px; color: #64748b; padding: 10px; border: 1px solid #e2e8f0; background: #f8fafc;"><strong>Notizen:</strong><br/>${dr.notizen.replace(/\\n/g, '<br>')}</div>`;
+                    clonedContent.innerHTML += `</tbody></table>`;
+                    if (dr.notizen) clonedContent.innerHTML += `
+                        <div class="bg-yellow-50/50 p-4 border border-yellow-100 rounded-lg">
+                            <h4 class="text-[10px] font-black uppercase text-yellow-800 mb-1">Notizen</h4>
+                            <p class="text-xs text-yellow-900 whitespace-pre-wrap">${dr.notizen}</p>
+                        </div>
+                    `;
+                    clonedContent.innerHTML += `</div>`;
                 }
 
                 // Reconstruct Belastung if exists
                 if (project.data?.moduleData?.belastungspruefung?.versuche) {
-                    clonedContent.innerHTML += `<h3 style="background: #f1f5f9; padding: 10px; border-left: 4px solid #ef4444; margin-top: 40px; page-break-before: always;">Belastungsprotokolle</h3>`;
+                    clonedContent.innerHTML += `
+                        <div class="mb-12 print:break-before-page">
+                            <h3 class="text-base font-black uppercase text-blue-900 border-b-2 border-blue-900 inline-block mb-6">Belastungsprotokolle</h3>
+                    `;
                     project.data.moduleData.belastungspruefung.versuche.forEach((v, idx) => {
                         clonedContent.innerHTML += `
-                            <div style="margin-top: 20px; border: 1px solid #cbd5e1; padding: 15px;">
-                                <h4 style="margin: 0 0 10px 0; color: #ef4444;">PRÜFUNG ${idx + 1} - ${v.fundament || 'Ohne Typ'}</h4>
-                                <p style="font-size: 12px; margin-bottom: 10px;"><strong>Prüflast:</strong> ${v.maxLoad || '-'} kN | <strong>GPS:</strong> ${v.gps || '-'}</p>
-                                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; margin-bottom: 10px;">
-                                    <tr style="background: #f1f5f9;">
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Stufe</th>
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Zeit (Min)</th>
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Weg Start</th>
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Weg Ende</th>
-                                    </tr>
+                            <div class="mb-8 print:break-inside-avoid border-l-4 border-blue-600 pl-4">
+                                <h4 class="font-bold text-sm uppercase text-slate-800 mb-2">Prüfung ${idx + 1} &middot; <span class="text-blue-600">${v.fundament || 'Ohne Typ'}</span></h4>
+                                
+                                <div class="flex gap-6 mb-3 text-xs">
+                                    <div><span class="text-[10px] font-black uppercase text-slate-400 mr-2">Prüflast:</span><span class="font-bold text-slate-800">${v.maxLoad || '-'} kN</span></div>
+                                    <div><span class="text-[10px] font-black uppercase text-slate-400 mr-2">GPS:</span><span class="font-bold text-blue-600">${v.gps || '-'}</span></div>
+                                </div>
+
+                                <table class="w-full text-left border-collapse mb-3 text-xs border border-gray-200">
+                                    <thead>
+                                        <tr class="bg-gray-50 border-b border-gray-200">
+                                            <th class="p-2 font-bold text-[10px] uppercase text-slate-600 border-r border-gray-200 w-16">Stufe</th>
+                                            <th class="p-2 font-bold text-[10px] uppercase text-slate-600 text-center border-r border-gray-200 w-24">Zeit (Min)</th>
+                                            <th class="p-2 font-bold text-[10px] uppercase text-slate-600 text-center border-r border-gray-200 w-24">W. Start (mm)</th>
+                                            <th class="p-2 font-bold text-[10px] uppercase text-slate-600 text-center w-24">W. Ende (mm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                         `;
                         (v.rows || []).forEach(r => {
-                            clonedContent.innerHTML += `<tr>
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.level}</td>
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.time}</td>
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.wegStart || '-'}</td>
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.wegEnde || '-'}</td>
+                            clonedContent.innerHTML += `<tr class="border-b border-gray-100">
+                                <td class="p-2 font-bold text-[10px] text-slate-800 border-r border-gray-100">${r.level}</td>
+                                <td class="p-2 text-center font-bold text-gray-600 border-r border-gray-100">${r.time}</td>
+                                <td class="p-2 text-center font-mono tabular-nums border-r border-gray-100">${r.wegStart || '-'}</td>
+                                <td class="p-2 text-center font-mono tabular-nums">${r.wegEnde || '-'}</td>
                             </tr>`;
                         });
-                        clonedContent.innerHTML += `</table>`;
-                        if (v.notizen) clonedContent.innerHTML += `<div style="font-size: 11px; color: #64748b;"><strong>Notizen:</strong><br/>${v.notizen.replace(/\\n/g, '<br>')}</div>`;
+                        clonedContent.innerHTML += `</tbody></table>`;
+                        if (v.notizen) clonedContent.innerHTML += `
+                            <div class="bg-yellow-50/50 p-3 border border-yellow-100 rounded-lg mt-2">
+                                <h4 class="text-[9px] font-black uppercase text-yellow-800 mb-1">Notizen</h4>
+                                <p class="text-[10px] text-yellow-900 whitespace-pre-wrap">${v.notizen.replace(/\\n/g, '<br>')}</p>
+                            </div>
+                        `;
                         clonedContent.innerHTML += `</div>`;
                     });
+                    clonedContent.innerHTML += `</div>`;
                 }
 
                 // Reconstruct Auszug if exists
                 if (project.data?.moduleData?.auszugsversuch?.versuche) {
-                    clonedContent.innerHTML += `<h3 style="background: #f1f5f9; padding: 10px; border-left: 4px solid #eab308; margin-top: 40px; page-break-before: always;">Auszugsprotokolle</h3>`;
+                    clonedContent.innerHTML += `
+                        <div class="mb-12 print:break-before-page">
+                            <h3 class="text-base font-black uppercase text-blue-900 border-b-2 border-blue-900 inline-block mb-6">Auszugsprotokolle</h3>
+                    `;
                     project.data.moduleData.auszugsversuch.versuche.forEach((v, idx) => {
                         clonedContent.innerHTML += `
-                            <div style="margin-top: 20px; border: 1px solid #cbd5e1; padding: 15px;">
-                                <h4 style="margin: 0 0 10px 0; color: #eab308;">VERSUCH ${idx + 1} - ${v.fundament || 'Ohne Typ'}</h4>
-                                <p style="font-size: 12px; margin-bottom: 10px;"><strong>Versagen bei:</strong> ${v.failVal ? v.failVal + ' kN' : '-'} | <strong>GPS:</strong> ${v.gps || '-'}</p>
-                                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; margin-bottom: 10px;">
-                                    <tr style="background: #f1f5f9;">
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Stufe</th>
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Zeit (Min)</th>
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Weg Start</th>
-                                        <th style="padding: 6px; border: 1px solid #cbd5e1;">Weg Ende</th>
-                                    </tr>
+                            <div class="mb-8 print:break-inside-avoid border-l-4 border-amber-500 pl-4">
+                                <h4 class="font-bold text-sm uppercase text-slate-800 mb-2">Versuch ${idx + 1} &middot; <span class="text-amber-600">${v.fundament || 'Ohne Typ'}</span></h4>
+                                
+                                <div class="flex gap-6 mb-3 text-xs">
+                                    <div><span class="text-[10px] font-black uppercase text-slate-400 mr-2">Versagen bei:</span><span class="font-bold text-red-600">${v.versagenBeiKn ? v.versagenBeiKn + ' kN' : '-'}</span></div>
+                                    <div><span class="text-[10px] font-black uppercase text-slate-400 mr-2">GPS:</span><span class="font-bold text-blue-600">${v.gps || '-'}</span></div>
+                                </div>
+
+                                <table class="w-full text-left border-collapse mb-3 text-xs border border-gray-200">
+                                    <thead>
+                                        <tr class="bg-gray-50 border-b border-gray-200">
+                                            <th class="p-2 font-bold text-[10px] uppercase text-slate-600 border-r border-gray-200 w-16">Stufe</th>
+                                            <th class="p-2 font-bold text-[10px] uppercase text-blue-900 text-center border-r border-gray-200 w-24">Last (kN)</th>
+                                            <th class="p-2 font-bold text-[10px] uppercase text-slate-600 text-center border-r border-gray-200 w-24">W. Start (mm)</th>
+                                            <th class="p-2 font-bold text-[10px] uppercase text-slate-600 text-center w-24">W. Ende (mm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                         `;
                         (v.rows || []).forEach(r => {
-                            const isFail = r.level === v.failVal + " kN";
-                            clonedContent.innerHTML += `<tr style="${isFail ? 'background: #fef2f2; font-weight: bold; color: #ef4444;' : ''}">
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.level}</td>
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.time}</td>
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.wegStart || '-'}</td>
-                                <td style="padding: 4px; border: 1px solid #cbd5e1;">${r.wegEnde || '-'}</td>
+                            const isFail = r.kn === (v.versagenBeiKn + "");
+                            clonedContent.innerHTML += `<tr class="border-b ${isFail ? 'bg-red-50 border-red-200' : 'border-gray-100'}">
+                                <td class="p-2 font-bold text-[10px] ${isFail ? 'text-red-600' : 'text-slate-800'} border-r ${isFail ? 'border-red-200' : 'border-gray-100'}">${r.stufe}</td>
+                                <td class="p-2 text-center font-mono font-bold ${isFail ? 'text-red-700' : 'text-blue-900'} tabular-nums border-r ${isFail ? 'border-red-200' : 'border-gray-100'}">${r.kn}</td>
+                                <td class="p-2 text-center font-mono tabular-nums border-r ${isFail ? 'border-red-200' : 'border-gray-100'}">${r.wegStart || '-'}</td>
+                                <td class="p-2 text-center font-mono tabular-nums">${r.wegEnde || '-'}</td>
                             </tr>`;
                         });
-                        clonedContent.innerHTML += `</table>`;
-                        if (v.notizen) clonedContent.innerHTML += `<div style="font-size: 11px; color: #64748b;"><strong>Notizen:</strong><br/>${v.notizen.replace(/\\n/g, '<br>')}</div>`;
+                        clonedContent.innerHTML += `</tbody></table>`;
+                        if (v.notizen) clonedContent.innerHTML += `
+                            <div class="bg-amber-50/50 p-3 border border-amber-100 rounded-lg mt-2">
+                                <h4 class="text-[9px] font-black uppercase text-amber-800 mb-1">Notizen</h4>
+                                <p class="text-[10px] text-amber-900 whitespace-pre-wrap">${v.notizen.replace(/\\n/g, '<br>')}</p>
+                            </div>
+                        `;
                         clonedContent.innerHTML += `</div>`;
                     });
+                    clonedContent.innerHTML += `</div>`;
                 }
 
-                clonedContent.innerHTML += `</div>`;
+                clonedContent.innerHTML += `</div>`; // Close page wrapper
 
                 const htmlContent = `
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Bericht: ${project.kunde} - ${project.projekt}</title>
+    <title>Bericht: ${safeCustomer} - ${safeProject}</title>
+    <!-- Inject Tailwind CSS strictly for accurate UI reproduction during print -->
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <style>
+        body { background-color: #f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+        @media print {
+            body { background-color: white !important; }
+            .max-w-5xl { max-width: 100% !important; padding: 0 !important; }
+            @page { margin: 15mm; }
+        }
+    </style>
 </head>
-<body style="margin:0; padding:0; background:white;">
+<body class="p-4 md:p-8">
     ${clonedContent.innerHTML}
 </body>
 </html>`;
