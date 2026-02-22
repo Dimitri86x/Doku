@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flexfundament-v13';
+const CACHE_NAME = 'flexfundament-v14';
 const ASSETS = [
     './index.html',
     './manifest.json',

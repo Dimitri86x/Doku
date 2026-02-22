@@ -1434,9 +1434,10 @@ Check your Browserslist config to be sure that your targets are set up correctly
                     return;
                 }
 
-                // Get photos/documents
+                // Get photos/documents - ensure ID is a Number since generateId() creates integers
+                const numericProjectId = Number(projectId);
                 const documents = await new Promise((resolve, reject) => {
-                    const req = db.transaction("documents", "readonly").objectStore("documents").index("projectId").getAll(projectId);
+                    const req = db.transaction("documents", "readonly").objectStore("documents").index("projectId").getAll(numericProjectId);
                     req.onsuccess = () => resolve(req.result);
                     req.onerror = () => reject(req.error);
                 });
@@ -1446,6 +1447,65 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 // Add project data JSON
                 const reportContent = JSON.stringify(project, null, 2);
                 zip.file("Projekt_Daten.json", reportContent);
+
+                // Generate HTML Report View
+                let detailsHtml = '';
+                if (project.data?.moduleData) {
+                    if (project.data.moduleData.drehmoment) {
+                        const dr = project.data.moduleData.drehmoment;
+                        detailsHtml += `<div class="data-box"><h3>Eindrehprotokoll (Drehmoment)</h3>
+                            <p><strong>Datum:</strong> ${dr.datum} | <strong>Prüfer:</strong> ${dr.pruefer}</p>
+                            <table style="width:100%; border-collapse: collapse; text-align: left; margin-top: 10px;">
+                                <tr style="background:#e2e8f0;"><th style="padding:8px;border:1px solid #cbd5e1;">Stufe</th><th style="padding:8px;border:1px solid #cbd5e1;">kN</th><th style="padding:8px;border:1px solid #cbd5e1;">kNm</th><th style="padding:8px;border:1px solid #cbd5e1;">Typ</th></tr>`;
+                        (dr.rows || []).forEach(r => {
+                            detailsHtml += `<tr><td style="padding:8px;border:1px solid #cbd5e1;">${r.stufe}</td><td style="padding:8px;border:1px solid #cbd5e1;">${r.kn}</td><td style="padding:8px;border:1px solid #cbd5e1;">${r.knm}</td><td style="padding:8px;border:1px solid #cbd5e1;">${r.typ}</td></tr>`;
+                        });
+                        detailsHtml += `</table></div>`;
+                    }
+                    if (project.data.moduleData.belastungspruefung) {
+                        const bel = project.data.moduleData.belastungspruefung;
+                        detailsHtml += `<div class="data-box"><h3>Belastungsprotokoll</h3>
+                            <p><strong>Datum:</strong> ${bel.datum} | <strong>Prüfer:</strong> ${bel.pruefer}</p>
+                            <p><em>(Beinhaltet ${bel.versuche?.length || 0} Prüfungen)</em></p></div>`;
+                    }
+                    if (project.data.moduleData.auszugsversuch) {
+                        const aus = project.data.moduleData.auszugsversuch;
+                        detailsHtml += `<div class="data-box"><h3>Auszugsprotokoll</h3>
+                            <p><strong>Datum:</strong> ${aus.datum} | <strong>Prüfer:</strong> ${aus.pruefer}</p></div>`;
+                    }
+                }
+
+                const htmlContent = `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Bericht: ${project.kunde} - ${project.projekt}</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1e293b; max-width: 900px; margin: 0 auto; line-height: 1.6; }
+        h1 { color: #0f172a; margin-bottom: 5px; font-size: 28px; }
+        h2 { color: #3b82f6; margin-top: 0px; font-weight: normal; font-size: 20px; }
+        .data-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin-top: 25px; }
+        h3 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
+        .footer { margin-top: 40px; font-size: 12px; color: #64748b; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Auftraggeber: ${project.kunde}</h1>
+    <h2>Projekt: ${project.projekt}</h2>
+    
+    <div style="display: flex; gap: 40px; margin-top: 20px; padding: 15px; background: #e0f2fe; border-radius: 8px;">
+        <div><strong>Dokumentiert am:</strong><br/> ${new Date(project.savedAt || Date.now()).toLocaleString('de-DE')}</div>
+        <div><strong>Involvierte Leistungsphasen:</strong><br/> ${project.moduleType || 'Stammdaten'}</div>
+        <div><strong>Exportierte Anlagen:</strong><br/> ${documents ? documents.length : 0} Fotos im ZIP-Ordner</div>
+    </div>
+    
+    ${detailsHtml || '<p>Keine detaillierten Testdaten gefunden.</p>'}
+    
+    <div class="footer">Erzeugt aus der digitalen FlexFundament Baustellen-Akte.</div>
+</body>
+</html>`;
+                zip.file(`Projektbericht_${safeProject}.html`, htmlContent);
 
                 // Add Photos
                 if (documents && documents.length > 0) {
