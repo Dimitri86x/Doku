@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projekt-Übersicht</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen">
+  <main class="max-w-6xl mx-auto p-4 md:p-8">
+    <header class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-black uppercase tracking-tight text-slate-800">Gespeicherte Projekte</h1>
+        <p class="text-xs text-slate-500">Lädt aus der lokalen SQLite-Datenbank über das Backend.</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700 text-xs font-bold uppercase">Zur App</a>
+        <button id="reload-projects" class="px-4 py-2 rounded-xl bg-blue-700 text-white text-xs font-bold uppercase">Neu laden</button>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-sm font-black uppercase text-slate-700">Projekte</h2>
+          <span id="projects-count" class="text-[11px] text-slate-500">0</span>
+        </div>
+        <div id="projects-list" class="divide-y divide-slate-100"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-sm font-black uppercase text-slate-700">Versuche</h2>
+          <span id="trials-count" class="text-[11px] text-slate-500">0</span>
+        </div>
+        <div id="trials-list" class="divide-y divide-slate-100"></div>
+      </div>
+    </section>
+
+    <section class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100">
+        <h2 class="text-sm font-black uppercase text-slate-700">Detail (JSON)</h2>
+      </div>
+      <pre id="json-preview" class="p-4 text-xs overflow-auto max-h-[360px] bg-slate-950 text-slate-100">Wähle einen Versuch aus.</pre>
+    </section>
+  </main>
+
+  <script>
+    const projectsList = document.getElementById("projects-list");
+    const trialsList = document.getElementById("trials-list");
+    const jsonPreview = document.getElementById("json-preview");
+    const projectsCount = document.getElementById("projects-count");
+    const trialsCount = document.getElementById("trials-count");
+
+    function fmt(value) {
+      try { return new Date(value).toLocaleString("de-DE"); } catch { return value || "-"; }
+    }
+
+    async function loadProjects() {
+      projectsList.innerHTML = '<div class="p-4 text-xs text-slate-500">Lade...</div>';
+      trialsList.innerHTML = '<div class="p-4 text-xs text-slate-500">Projekt auswählen.</div>';
+      trialsCount.textContent = "0";
+      jsonPreview.textContent = "Wähle einen Versuch aus.";
+
+      const res = await fetch("/api/projects?limit=300");
+      if (!res.ok) throw new Error("Projekte konnten nicht geladen werden.");
+
+      const data = await res.json();
+      const items = data.items || [];
+      projectsCount.textContent = String(items.length);
+
+      if (items.length === 0) {
+        projectsList.innerHTML = '<div class="p-4 text-xs text-slate-500">Keine Projekte vorhanden.</div>';
+        return;
+      }
+
+      projectsList.innerHTML = "";
+      items.forEach((project) => {
+        const row = document.createElement("button");
+        row.className = "w-full text-left p-4 hover:bg-slate-50 transition";
+        row.innerHTML = `
+          <div class="text-sm font-bold text-slate-800">${project.kunde} - ${project.projekt}</div>
+          <div class="text-[11px] text-slate-500 mt-1">Prüfer: ${project.pruefer || "-"} | Versuche: ${project.trials_count}</div>
+          <div class="text-[11px] text-slate-400 mt-1">Aktualisiert: ${fmt(project.updated_at)}</div>
+        `;
+        row.addEventListener("click", () => loadTrials(project.id));
+        projectsList.appendChild(row);
+      });
+    }
+
+    async function loadTrials(projectId) {
+      trialsList.innerHTML = '<div class="p-4 text-xs text-slate-500">Lade Versuche...</div>';
+      jsonPreview.textContent = "Wähle einen Versuch aus.";
+
+      const res = await fetch(`/api/projects/${projectId}/trials?limit=500`);
+      if (!res.ok) throw new Error("Versuche konnten nicht geladen werden.");
+
+      const data = await res.json();
+      const items = data.items || [];
+      trialsCount.textContent = String(items.length);
+
+      if (items.length === 0) {
+        trialsList.innerHTML = '<div class="p-4 text-xs text-slate-500">Keine Versuche vorhanden.</div>';
+        return;
+      }
+
+      trialsList.innerHTML = "";
+      items.forEach((trial) => {
+        const row = document.createElement("button");
+        row.className = "w-full text-left p-4 hover:bg-slate-50 transition";
+        row.innerHTML = `
+          <div class="text-sm font-bold text-slate-800">${trial.module_type}</div>
+          <div class="text-[11px] text-slate-500 mt-1">ID: ${trial.id} | ${fmt(trial.created_at)}</div>
+        `;
+        row.addEventListener("click", () => {
+          try {
+            const parsed = JSON.parse(trial.payload_json || "{}");
+            jsonPreview.textContent = JSON.stringify(parsed, null, 2);
+          } catch {
+            jsonPreview.textContent = trial.payload_json || "";
+          }
+        });
+        trialsList.appendChild(row);
+      });
+    }
+
+    document.getElementById("reload-projects").addEventListener("click", () => {
+      loadProjects().catch((err) => {
+        projectsList.innerHTML = `<div class="p-4 text-xs text-red-600">${err.message}</div>`;
+      });
+    });
+
+    loadProjects().catch((err) => {
+      projectsList.innerHTML = `<div class="p-4 text-xs text-red-600">${err.message}</div>`;
+    });
+  </script>
+</body>
+</html>

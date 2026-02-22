@@ -1,0 +1,122 @@
+:root {
+  --brand-blue: #1d4ed8;
+  --brand-green: #00a651;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.option-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.option-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.table-input {
+  width: 100%;
+  background: transparent;
+  text-align: right;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table-input:focus {
+  outline: none;
+  border-bottom: 1px solid #3b82f6;
+  background: #f8fafc;
+}
+
+.timer-active {
+  animation: pulse-blue 2s infinite;
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.timer-finished {
+  background-color: #fee2e2 !important;
+}
+
+.cursor-pointer-hover:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.icon-btn {
+  transition: all 0.2s;
+  cursor: pointer;
+  border: 1px solid #e2e8f0;
+}
+
+.icon-btn.active {
+  transform: scale(1.1);
+  background-color: #dbeafe !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.fail-active {
+  background-color: #fef2f2 !important;
+  border-left: 4px solid #ef4444 !important;
+}
+
+#sync-status {
+  transition: all 0.2s ease;
+}
+
+#sync-status.sync-ok {
+  border-color: #86efac;
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+
+#sync-status.sync-warn {
+  border-color: #fde68a;
+  background-color: #fffbeb;
+  color: #b45309;
+}
+
+#sync-status.sync-error {
+  border-color: #fca5a5;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+#sync-status.sync-progress {
+  border-color: #bfdbfe;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+@keyframes pulse-blue {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .table-input {
+    font-size: 14px;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background-color: #fff;
+    padding: 0;
+  }
+
+  .card {
+    border: none;
+    box-shadow: none;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+}

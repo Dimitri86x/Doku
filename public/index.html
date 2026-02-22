@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Projekt-Zentrale - Digitale Baustelle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-900">
+
+    <!-- DATALIST FÜR PRÜFER -->
+    <datalist id="prufer-liste">
+        <option value="Dimitri Reitenbach">
+        <option value="Eduard Lieder">
+    </datalist>
+
+    <!-- MODAL CONFIRM -->
+    <div id="modal-confirm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center text-slate-800">
+            <h3 class="text-lg font-bold mb-2 uppercase">Daten löschen?</h3>
+            <p class="text-slate-500 text-sm mb-6">Alle Protokollwerte werden auf Null gesetzt.</p>
+            <div class="flex gap-3">
+                <button onclick="toggleModal('modal-confirm', false)" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold uppercase text-[10px]">Abbrechen</button>
+                <button onclick="resetAllData()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold uppercase text-[10px]">Löschen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="block">
+        <header class="bg-[#001b40] text-white py-12 px-4 shadow-2xl relative overflow-hidden flex flex-col items-center">
+            
+            <!-- SVG BANNER (GRÜN) -->
+            <div class="w-full flex justify-center mb-2 px-4 relative z-10">
+                <svg viewBox="0 0 600 80" class="h-12 md:h-16" xmlns="http://www.w3.org/2000/svg">
+                    <text x="50%" y="60" text-anchor="middle" fill="#00a651" style="font-family: 'Inter', sans-serif; font-weight: 900; font-style: italic; font-size: 70px; text-transform: uppercase; letter-spacing: -3px;">
+                        FLEXFUNDAMENT
+                    </text>
+                </svg>
+            </div>
+            
+            <p class="text-blue-300 text-xs md:text-sm font-bold uppercase tracking-[0.4em] relative z-10">Digitale Baustellendokumentation</p>
+            
+            <!-- Bodenlinie -->
+            <div class="absolute bottom-0 left-0 w-full h-1.5 bg-[#00a651]"></div>
+        </header>
+
+        <main class="max-w-5xl mx-auto p-4 md:p-8 -mt-10 text-slate-800">
+            <section class="bg-white rounded-3xl shadow-xl p-6 md:p-8 mb-10 border border-slate-200">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                        </div>
+                        <h2 class="text-xl font-black uppercase tracking-tight">Stammdaten</h2>
+                    </div>
+                    <button onclick="toggleModal('modal-confirm', true)" class="text-[10px] font-bold text-red-500 uppercase hover:underline">Zentrale Reset</button>
+                </div>
+                <div id="sync-status" class="mb-6 inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    Cloud-Status: bereit
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-800">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[11px] font-black text-slate-400 uppercase mb-2 ml-1">Kunde / Auftraggeber</label>
+                            <input type="text" id="input-kunde" placeholder="z.B. Müller Bau" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm focus:border-blue-500 focus:outline-none transition-all text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-black text-slate-400 uppercase mb-2 ml-1">Projekt / BV</label>
+                            <input type="text" id="input-projekt" placeholder="Projektname / Ort" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm focus:border-blue-500 focus:outline-none transition-all text-slate-800">
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[11px] font-black text-slate-400 uppercase mb-2 ml-1">Prüfer (Auswahl oder Name eingeben)</label>
+                            <input type="text" id="input-kontakt" list="prufer-liste" placeholder="Name auswählen oder eingeben" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm focus:border-blue-500 focus:outline-none transition-all text-slate-800">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-black text-slate-400 uppercase mb-2 ml-1">Protokoll-E-Mail</label>
+                            <input type="email" id="input-email" placeholder="protokoll@baustelle.de" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-sm focus:border-blue-500 focus:outline-none transition-all text-slate-800">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-slate-800">
+                <!-- Belastungsprüfung -->
+                <button onclick="showView('belastungsversuch')" class="option-card bg-white border border-slate-200 p-8 rounded-3xl transition-all duration-300 flex flex-col items-center text-center group">
+                    <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-all text-blue-600 group-hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    </div>
+                    <h4 class="font-black mb-2 uppercase tracking-tight">Belastungsprüfung</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-6">Protokoll nach Schema Krinner (5% - 160% Last).</p>
+                    <span class="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] group-hover:translate-x-1 transition-transform">Starten &rarr;</span>
+                </button>
+
+                <!-- Drehmoment -->
+                <button onclick="showView('drehmoment')" class="option-card bg-white border border-slate-200 p-8 rounded-3xl transition-all duration-300 flex flex-col items-center text-center group text-slate-800">
+                    <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-all text-blue-600 group-hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    </div>
+                    <h4 class="font-black mb-2 uppercase tracking-tight">Drehmoment</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-6">Präzise kNm-Ermittlung über Maschinen-Lookup (KR D 30).</p>
+                    <span class="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] group-hover:translate-x-1 transition-transform">Starten &rarr;</span>
+                </button>
+
+                <!-- Auszugsversuch -->
+                <button onclick="showView('bruchgrenze')" class="option-card bg-white border border-slate-200 p-8 rounded-3xl transition-all duration-300 flex flex-col items-center text-center group text-slate-800">
+                    <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-red-600 transition-all text-blue-600 group-hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                    </div>
+                    <h4 class="font-black mb-2 uppercase tracking-tight">Auszugsversuch</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-6">Grenzlastprüfung stufenweise (10-80kN) bis zum Versagen.</p>
+                    <span class="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] group-hover:translate-x-1 transition-transform">Starten &rarr;</span>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- BELASTUNGSPRÜFUNG VIEW -->
+    <div id="view-belastungsversuch" class="hidden p-2 md:p-6 bg-gray-100 min-h-screen text-slate-900">
+        <div class="max-w-5xl mx-auto bg-white shadow-2xl rounded-lg overflow-hidden card text-slate-900">
+            <div class="p-6 border-b border-gray-200 text-slate-900">
+                <div class="flex justify-between items-start mb-6 text-slate-900">
+                    <div>
+                        <button onclick="showView('dashboard')" class="no-print text-blue-700 text-[10px] font-black uppercase mb-4 flex items-center gap-1 hover:text-blue-900 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            Zentrale
+                        </button>
+                        <h1 class="text-xl font-bold uppercase text-blue-900 border-b-2 border-blue-900 inline-block tracking-tight text-blue-900">
+                            Protokoll: Belastungsprüfung
+                        </h1>
+                    </div>
+                    <div class="no-print text-slate-900">
+                        <button onclick="triggerExport('Belastungsprüfung')" class="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-lg flex items-center gap-2 uppercase tracking-wide">
+                            Als PDF speichern
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-800">
+                    <div class="space-y-2 text-slate-800">
+                        <div class="flex border border-gray-300">
+                            <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Projekt</div>
+                            <div id="lb-display-projekt" class="flex-1 p-2 text-sm font-medium text-blue-900"></div>
+                        </div>
+                        <div class="flex border border-gray-300 text-slate-800">
+                            <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300 italic">Name/Typ</div>
+                            <input type="text" class="flex-1 p-2 text-sm focus:outline-none text-slate-800" placeholder="z.B. SF M 114x2100 M24">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-slate-800">
+                            <div class="flex border border-gray-300">
+                                <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Datum</div>
+                                <input type="date" id="lb-date" class="flex-1 p-2 text-sm focus:outline-none text-slate-800">
+                            </div>
+                            <div class="flex border border-gray-300">
+                                <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Position</div>
+                                <input type="text" class="flex-1 p-2 text-sm focus:outline-none text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 rounded border border-blue-200 flex flex-col justify-center items-center h-full text-slate-900">
+                        <label class="block text-[10px] font-black uppercase text-blue-600 mb-1">Einstellung Maximalkraft (100%)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="maxForce" value="50" step="0.5" 
+                                   class="text-5xl font-black text-center w-32 bg-transparent border-b-2 border-blue-400 focus:outline-none focus:border-blue-600 text-blue-900 text-slate-800"
+                                   oninput="calculateValues()">
+                            <span class="text-2xl font-bold text-blue-400 uppercase">kN</span>
+                        </div>
+                        <div class="mt-4 space-y-1 w-full max-w-xs text-slate-900">
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-gray-500 font-bold uppercase text-slate-500">5% Vorspann:</span>
+                                <span id="force-5" class="text-blue-700 font-bold">2.5 kN</span>
+                            </div>
+                            <div class="flex justify-between text-[10px]">
+                                <span class="text-gray-500 font-bold uppercase text-slate-500">160% Max:</span>
+                                <span id="force-160" class="text-orange-700 font-bold">80.0 kN</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto text-slate-900">
+                <table class="w-full text-[12px] border-collapse text-slate-800">
+                    <thead>
+                        <tr class="bg-blue-900 text-white uppercase tracking-wider">
+                            <th class="p-3 border-r border-blue-800 text-left w-48">Laststufe</th>
+                            <th class="p-3 border-r border-blue-800 text-center">Kraft [kN]</th>
+                            <th class="p-3 border-r border-blue-800 text-center w-28">Haltezeit</th>
+                            <th class="p-3 border-r border-blue-800 text-center w-32 no-print">Timer</th>
+                            <th class="p-3 border-r border-blue-800 text-center">Weg bei Lastaufbringung</th>
+                            <th class="p-3 text-center">Weg nach Lasthaltezeit</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="p-6 text-[10px] text-gray-500 space-y-2 border-t border-gray-100 text-slate-900">
+                <p class="text-red-600 font-bold italic">Achtung: Bitte bei jeweiliger Laststufe die Verformung beim Aufbringen der Last und nach Erreichen der angegebenen Wartezeit notieren!</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 text-slate-500">
+                    <p>*Die zulässige Gesamtkopfverschiebung ist abhängig von den tolerierten Setzungen des aufgehenden Gewerks. Ist mit dem Tragwerksplaner abzustimmen.</p>
+                    <p>*Die Durchführung der Belastungsproben ist immer im Vorfeld mit dem involvierten Geotechniker abzustimmen.</p>
+                    <p>*Zusätzliche Stufen (120%-160%) dienen der Ermittlung der Grenzkraft bei Versagen.</p>
+                </div>
+                <!-- Signature for Belastung -->
+                <div class="mt-8 border-t border-gray-200 pt-6 flex justify-between items-center bg-gray-50/30 p-4 rounded-lg">
+                    <div class="w-64">
+                        <div class="border-b-2 border-blue-900 pb-2 mb-2 italic text-gray-300 text-sm">Unterschrift Prüfer</div>
+                        <span class="text-[10px] font-black uppercase text-gray-400 tracking-widest text-slate-400">Digital bestätigt</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DREHMOMENT VIEW -->
+    <div id="view-drehmoment" class="hidden p-2 md:p-6 bg-gray-100 min-h-screen text-slate-900">
+        <div class="max-w-5xl mx-auto bg-white shadow-2xl rounded-lg overflow-hidden card text-slate-900">
+            <div class="p-6 md:p-10 border-b border-gray-200 text-slate-900">
+                <div class="flex justify-between items-start mb-6 text-slate-900">
+                    <div>
+                        <button onclick="showView('dashboard')" class="no-print text-blue-700 text-[10px] font-black uppercase mb-4 flex items-center gap-1 hover:text-blue-900 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            Zentrale
+                        </button>
+                        <h1 class="text-xl font-bold uppercase text-blue-900 border-b-2 border-blue-900 inline-block tracking-tight text-blue-900">
+                            Drehmoment-Protokollierung
+                        </h1>
+                        <p id="dt-sync-info" class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-2"></p>
+                    </div>
+                    <div class="flex gap-2 no-print">
+                        <button onclick="toggleReferenceTable('reference-table-container')" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-xs font-bold uppercase transition border border-gray-300">Handbuch-Werte</button>
+                        <button onclick="triggerExport('Drehmoment')" class="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-lg flex items-center gap-2 uppercase tracking-wide">
+                            Als PDF speichern
+                        </button>
+                    </div>
+                </div>
+
+                <div id="reference-table-container" class="hidden no-print mb-8 bg-blue-900 rounded-lg p-6 text-white overflow-hidden shadow-inner">
+                    <div class="flex justify-between items-center mb-4 text-white">
+                        <h3 class="text-blue-200 text-xs font-black uppercase tracking-widest">Hinterlegte Maschinen-Tabelle (Auszug)</h3>
+                        <span class="text-[9px] text-blue-300 italic">Lookup-Funktion aktiv</span>
+                    </div>
+                    <div class="grid grid-cols-5 gap-2 text-[9px] font-black uppercase text-blue-300 border-b border-blue-800 pb-2 mb-2">
+                        <span>Bar</span><span>M_Hase</span><span>F_Hase</span><span>M_Schild</span><span>F_Schild</span>
+                    </div>
+                    <div id="ref-table-rows" class="max-h-60 overflow-y-auto space-y-1 text-[10px] font-mono pr-2"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-800">
+                    <div class="space-y-2">
+                        <div class="flex border border-gray-300">
+                            <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Maschine</div>
+                            <input type="text" value="KR D 30" class="flex-1 p-2 text-sm focus:outline-none text-slate-800">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-slate-800">
+                            <div class="flex border border-gray-300">
+                                <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Datum</div>
+                                <input type="date" id="torque-date" class="flex-1 p-2 text-sm focus:outline-none text-slate-800">
+                            </div>
+                            <div class="flex border border-gray-300">
+                                <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Prüfer</div>
+                                <input type="text" id="dt-prufer-input" list="prufer-liste" class="flex-1 p-2 text-sm font-medium focus:outline-none placeholder-slate-400 text-slate-800" placeholder="Name">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded border border-blue-200 flex flex-col justify-center">
+                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Hinweis zur Berechnung</span>
+                        <p class="text-[11px] leading-relaxed text-gray-600 italic">Werte werden gangabhängig aus der hinterlegten Kennlinie ermittelt.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto text-slate-900">
+                <table class="w-full text-[12px] border-collapse text-slate-800">
+                    <thead>
+                        <tr class="bg-blue-900 text-white uppercase tracking-wider">
+                            <th class="p-3 border-r border-blue-800 text-left w-16">Nr.</th>
+                            <th class="p-3 border-r border-blue-800 text-center w-36">Antrieb</th>
+                            <th class="p-3 border-r border-blue-800 text-center w-32">Druck [bar]</th>
+                            <th class="p-3 border-r border-blue-800 text-center bg-blue-800">Moment [kNm]</th>
+                            <th class="p-3 border-r border-blue-800 text-center">Last [kN]</th>
+                            <th class="p-3 text-center">Fundament-Pos.</th>
+                            <th class="p-3 text-center no-print w-12"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="torque-body"></tbody>
+                </table>
+            </div>
+
+            <div class="p-6 no-print bg-gray-50 text-slate-900">
+                <button onclick="addTorqueRow()" class="w-full py-4 border-2 border-dashed border-gray-300 text-gray-400 rounded-lg font-black text-[10px] uppercase hover:bg-white hover:text-blue-600 hover:border-blue-200 transition-all text-slate-800">
+                    + Neue Messung hinzufügen
+                </button>
+            </div>
+            
+            <div class="p-8 border-t border-gray-100 flex justify-between items-center bg-gray-50/50 text-slate-800">
+                <div class="w-64">
+                    <div class="border-b-2 border-blue-900 pb-2 mb-2 italic text-gray-300 text-sm">Unterschrift Prüfer</div>
+                    <span class="text-[10px] font-black uppercase text-gray-400 tracking-widest text-slate-400">Digital signiert</span>
+                </div>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest" id="current-date-torque"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUSZUGSVERSUCH VIEW -->
+    <div id="view-bruchgrenze" class="hidden p-2 md:p-6 bg-gray-100 min-h-screen text-slate-900">
+        <div class="max-w-5xl mx-auto bg-white shadow-2xl rounded-lg overflow-hidden card text-slate-900 text-slate-900">
+            <div class="p-6 border-b border-gray-200 text-slate-900">
+                <div class="flex justify-between items-start mb-6 text-slate-900">
+                    <div>
+                        <button onclick="showView('dashboard')" class="no-print text-blue-700 text-[10px] font-black uppercase mb-4 flex items-center gap-1 hover:text-blue-900 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            Zentrale
+                        </button>
+                        <h1 class="text-xl font-bold uppercase text-blue-900 border-b-2 border-blue-900 inline-block tracking-tight text-blue-900">
+                            Protokoll: Auszugsversuch (Grenzlastprüfung)
+                        </h1>
+                    </div>
+                    <div class="no-print text-slate-900 text-slate-900">
+                        <button onclick="triggerExport('Auszugsversuch')" class="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-lg flex items-center gap-2 uppercase tracking-wide text-slate-900">
+                            Als PDF speichern
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-800">
+                    <div class="space-y-2 text-slate-800">
+                        <div class="flex border border-gray-300 text-slate-800">
+                            <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Projekt</div>
+                            <div id="bg-display-projekt" class="flex-1 p-2 text-sm font-medium text-blue-900"></div>
+                        </div>
+                        <div class="flex border border-gray-300 text-slate-800">
+                            <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300 italic">ID / Pos.</div>
+                            <input type="text" class="flex-1 p-2 text-sm focus:outline-none text-slate-800" placeholder="z.B. Anker #01">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-slate-800">
+                            <div class="flex border border-gray-300 text-slate-800">
+                                <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Datum</div>
+                                <input type="date" id="bg-date" class="flex-1 p-2 text-sm focus:outline-none text-slate-800">
+                            </div>
+                            <div class="flex border border-gray-300 text-slate-800">
+                                <div class="w-24 bg-gray-50 p-2 text-xs font-bold border-r border-gray-300">Prüfer</div>
+                                <input type="text" id="bg-prufer-input" list="prufer-liste" class="flex-1 p-2 text-sm focus:outline-none text-slate-800" placeholder="Name">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Versagenslast Resultat Box -->
+                    <div class="bg-red-50 p-4 rounded border-2 border-red-200 flex flex-col justify-center items-center h-full relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-2 opacity-10 text-red-600">
+                            <svg class="h-16 w-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5V2l-3.333.833a2 2 0 00-1.116.516l-3.805 3.805a2 2 0 01-1.414.586H2v10h2a2 2 0 001.414-.586l3.805-3.805a2 2 0 011.116-.516L17 11V7h-5z" clip-rule="evenodd" /></svg>
+                        </div>
+                        <label class="block text-[10px] font-black uppercase text-red-600 mb-1 tracking-widest">Ermittelte maximale Zuglast (Versagen)</label>
+                        <div class="flex items-center gap-2 text-slate-900">
+                            <input type="number" id="fail-load-result" placeholder="---" 
+                                   class="text-5xl font-black text-center w-32 bg-transparent border-b-2 border-red-400 focus:outline-none text-red-900 text-slate-800">
+                            <span class="text-2xl font-bold text-red-400 uppercase">kN</span>
+                        </div>
+                        <p class="text-[9px] text-red-400 mt-2 font-bold uppercase">*Abbruch des Versuchs bei Bodenversagen</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto text-slate-900">
+                <table class="w-full text-[12px] border-collapse text-slate-800 text-slate-800">
+                    <thead>
+                        <tr class="bg-blue-900 text-white uppercase tracking-wider">
+                            <th class="p-3 border-r border-blue-800 text-left w-32">Laststufe</th>
+                            <th class="p-3 border-r border-blue-800 text-center">Kraft in Kilonewton</th>
+                            <th class="p-3 border-r border-blue-800 text-center w-28">Haltezeit</th>
+                            <th class="p-3 border-r border-blue-800 text-center w-32 no-print">Timer</th>
+                            <th class="p-3 border-r border-blue-800 text-center">Weg bei Lastaufbringung</th>
+                            <th class="p-3 text-center">Weg nach Last Haltezeit</th>
+                            <th class="p-3 text-center no-print w-24">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bg-tableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="p-8 border-t border-gray-100 flex justify-between items-center bg-gray-50/50 text-slate-800">
+                <div class="w-64 text-slate-900">
+                    <div class="border-b-2 border-blue-900 pb-2 mb-2 italic text-gray-300 text-sm">Unterschrift Prüfer</div>
+                    <span class="text-[10px] font-black uppercase text-gray-400 tracking-widest text-slate-400">Maximallast bestätigt</span>
+                </div>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest" id="bg-current-date-footer"></span>
+            </div>
+        </div>
+    </div>
+
+    <script defer src="/js/app.js"></script>
+</body>
+</html>
