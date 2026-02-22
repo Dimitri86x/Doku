@@ -1055,21 +1055,24 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 </div>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-100 flex gap-3 justify-end items-center">
+            <div
+                class="mt-6 pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-3 sm:justify-between items-center w-full">
                 <button onclick="deleteProject(window.currentOpenProjectId)"
-                    class="px-6 py-3 bg-red-50 hover:bg-red-100 rounded-xl font-bold uppercase text-[10px] text-red-600 transition-colors mr-auto">Projekt
+                    class="w-full sm:w-auto px-6 py-3 bg-red-50 hover:bg-red-100 rounded-xl font-bold uppercase text-[10px] text-red-600 transition-colors">Projekt
                     löschen</button>
-                <button onclick="exportSingleProject(window.currentOpenProjectId)"
-                    class="px-6 py-3 bg-blue-50 flex items-center gap-2 hover:bg-blue-100 rounded-xl font-bold uppercase text-[10px] text-blue-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Exportieren
-                </button>
-                <button onclick="toggleModal('modal-project-details', false)"
-                    class="px-6 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold uppercase text-[10px] text-slate-600 transition-colors">Schließen</button>
+                <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <button onclick="exportSingleProject(window.currentOpenProjectId)"
+                        class="w-full sm:w-auto justify-center px-6 py-3 bg-blue-50 flex items-center gap-2 hover:bg-blue-100 rounded-xl font-bold uppercase text-[10px] text-blue-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Exportieren
+                    </button>
+                    <button onclick="toggleModal('modal-project-details', false)"
+                        class="w-full sm:w-auto px-6 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold uppercase text-[10px] text-slate-600 transition-colors">Schließen</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1464,6 +1467,27 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 const safeProject = (project.projekt || project.data?.projekt?.projekt || 'Projekt').replace(/[^a-z0-9_ -]/gi, '_');
                 const zipFilename = `${safeCustomer}_${safeProject}_Export.zip`;
 
+                try {
+                    if (window.showSaveFilePicker) {
+                        const fileHandle = await window.showSaveFilePicker({
+                            suggestedName: zipFilename,
+                            types: [{
+                                description: 'ZIP Archiv',
+                                accept: { 'application/zip': ['.zip'] },
+                            }],
+                        });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(content);
+                        await writable.close();
+                        showToast(`Projekt erfolgreich exportiert!`);
+                        return; // Exit if file picker succeeds
+                    }
+                } catch (e) {
+                    if (e.name === 'AbortError') return;
+                    console.warn('showSaveFilePicker fehlgeschlagen, nutze Fallback-Download', e);
+                }
+
+                // Fallback for browsers that don't support modern File Access API
                 const url = URL.createObjectURL(content);
                 const a = document.createElement("a");
                 a.style.display = 'none';
@@ -1474,7 +1498,7 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    alert(`Projekt als ${zipFilename} exportiert!`);
+                    showToast(`Projekt exportiert (Download-Ordner)!`);
                 }, 100);
 
             } catch (err) {
