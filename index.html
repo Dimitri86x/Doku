@@ -1452,17 +1452,20 @@ Check your Browserslist config to be sure that your targets are set up correctly
                 const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
+                a.style.display = 'none';
                 a.href = url;
                 const d = new Date();
                 const ts = d.toISOString().split("T")[0] + "_" + d.getHours() + "-" + d.getMinutes();
                 a.download = `Flexfundament_Backup_${ts}.json`;
                 document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast("Datenbank erfolgreich exportiert!");
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast("Datenbank erfolgreich exportiert!");
+                }, 100);
             } catch (err) {
-                console.error("Export-Fehler:", err);
+                console.trace("Export-Fehler:", err);
                 alert("Fehler beim Exportieren der Datenbank: " + err.message);
             }
         }
